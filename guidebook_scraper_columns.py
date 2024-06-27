@@ -3,56 +3,46 @@ import pandas as pd  # For handling data and creating CSV files
 import re  # For regular expressions to find specific text patterns
 
 def extract_text_from_pdf(pdf_path):
-    guide_book = fitz.open(pdf_path)  # Open the PDF document
+    document = fitz.open(pdf_path)  # Open the PDF document
     text_data = []  # List to store text from each page
-    for page_number in range(len(guide_book)):  # Iterate through all pages
-        page = guide_book.load_page(page_number)  # Load each page
-        pdf_text = page.get_text("text")  # Extract text from the page
-        text_data.append(pdf_text)  # Append the extracted text to the list
+    for page_num in range(len(document)):  # Iterate through all pages
+        page = document.load_page(page_num)  # Load each page
+        text = page.get_text("text")  # Extract text from the page
+        text_data.append(text)  # Append the extracted text to the list
     return text_data  # Return the list of text data
 
-#function to parse registration info
 def parse_registration_info(text_data):
     registration_info = {
         "registration_date": [],
-        "required_courses": [],
-        "fees": [],
-        "payment_details": []
+        "course_code": [],
+        "fees": []
     }
 
     # Define regex patterns for the required information
     date_pattern = re.compile(r'Registration Date:\s*(\d{2}/\d{2}/\d{4})')
     course_pattern = re.compile(r'\b(EEI|EEX|MHZ|CVM|DMM|EEM)\S*\b')
     fees_pattern = re.compile(r'Fees:\s*Rs\.?\s*([\d,]+)')
-    payment_pattern = re.compile(r'Payment Details:\s*(.*)')
 
     for page_text in text_data:
-        # Find registration dates
+        # Find all matches for each pattern
         dates = date_pattern.findall(page_text)
-        registration_info["registration_date"].extend(dates)
-
-        # Find required courses
         courses = course_pattern.findall(page_text)
-        registration_info["required_courses"].extend(courses)
-
-        # Find fees
         fees = fees_pattern.findall(page_text)
+
+        # Ensure the lengths are the same by filling in with None if necessary
+        max_length = max(len(dates), len(courses), len(fees))
+
+        dates.extend([None] * (max_length - len(dates)))
+        courses.extend([None] * (max_length - len(courses)))
+        fees.extend([None] * (max_length - len(fees)))
+
+        # Append each matched item to the respective list in the dictionary
+        registration_info["registration_date"].extend(dates)
+        registration_info["course_code"].extend(courses)
         registration_info["fees"].extend(fees)
-
-        # Find payment details
-        payments = payment_pattern.findall(page_text)
-        registration_info["payment_details"].extend(payments)
-
-    # Ensure all lists in the dictionary are of the same length
-    max_length = max(len(registration_info[key]) for key in registration_info)
-    for key in registration_info:
-        while len(registration_info[key]) < max_length:
-            registration_info[key].append(None)  # Append None to lists that are shorter
 
     return registration_info
 
-
-#function to save as csv
 def save_to_csv(registration_info, output_path):
     df = pd.DataFrame(registration_info)  # Create a DataFrame from the parsed info
     df.to_csv(output_path, index=False)  # Save DataFrame to CSV
