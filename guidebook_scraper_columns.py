@@ -5,17 +5,20 @@ import re
 # Function to calculate credit value from course code
 def calculate_credit(course_code):
     try:
-        # The second digit of the course code represents the credit value
-        credit_value = int(course_code[1])
+        # Extract the numeric part of the course code
+        numeric_part = re.findall(r'\d+', course_code)[0]
+        # The second digit of the numeric part represents the credit value
+        credit_value = int(numeric_part[1])
+        print(f"Course Code: {course_code}, Credit Value: {credit_value}")
         return credit_value
     except (IndexError, ValueError):
-        # Return a default credit value or handle the error
-        return 0  # or raise an error
+        return 0  # Return a default credit value or handle the error
 
 # Function to calculate cost from credit value
 def calculate_cost(credit):
-    cost_per_credit = 2000
+    cost_per_credit = 3990
     return credit * cost_per_credit
+
 
 # Path to the PDF file
 pdf_path = r'C:\Users\Asus\Downloads\BSE_Student-Guidebook-2023-24.pdf'
@@ -43,12 +46,14 @@ for i, table in enumerate(tables):
         else:
             continue  # Skip rows where the first column is not a string
 
+        # Extract course code
         course_code = first_column.split()[0]
 
         # Validate the course code format (assuming course codes are alphanumeric and of a specific length)
         if not re.match(r'^[A-Z]{3}\d{4}$', course_code):
             continue  # Skip invalid course codes
 
+        # Extract course name
         course_name = ' '.join(first_column.split()[1:])
 
         # Calculate credit value
@@ -60,12 +65,11 @@ for i, table in enumerate(tables):
         # Append the processed data to the list
         data.append([course_code, credit, cost])
 
-
 # Create a DataFrame from the processed data
 df = pd.DataFrame(data, columns=['Course', 'Credit', 'Cost'])
 
 # Save the DataFrame to a CSV file
-df.to_csv('courses.csv', index=False)
+df.to_csv('courses_new.csv', index=False)
 
 print(df)
 
